@@ -1,6 +1,6 @@
 {
   "name": "overpool",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Turing-complete Decentralized Ledger of Off-chain Bitcoin Transactions",
   "main": "index.js",
   "author": "unwriter@protonmail.com",
