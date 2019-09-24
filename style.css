@@ -1,0 +1,85 @@
+section.cover.has-mask .mask {
+  background: none !important;
+}
+section.cover {
+/*
+  background-image: url('https://media.giphy.com/media/U7vfpdl0p8JdqvlJhL/giphy.gif') !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  */
+  /*
+  color: white;
+  background: rgba(0,0,0,0.8) !important;
+  */
+  background: white !important;
+  color: rgba(0,0,0,0.8);
+}
+section.cover blockquote p {
+  line-height: 0.8rem;
+}
+section.cover h1 .anchor span {
+/*
+  color: white !important;
+  */
+  display: inline-block;
+  -webkit-animation: pulse 3s infinite !important;
+  -moz-animation:    pulse 3s infinite !important;
+  -o-animation:      pulse 3s infinite !important;
+  animation:         pulse 3s infinite !important;
+}
+.cover-main {
+/*
+  background: #F9E681;
+  margin: 0 !important;
+*/
+  font-family: Menlo, monaco, arial;
+}
+.cover-main p {
+  font-size: 12px;
+}
+section.cover .cover-main > p:last-child a {
+  margin: 0;
+}
+section.cover .cover-main>p a {
+  background: rgba(0,0,0,0.8) !important;
+  margin: 3px;
+  border: 1px solid white;
+  padding: 2px 10px !important;
+  border-radius: 2px !important;
+  color: white !important;
+  font-size: 10px !important;
+  font-family: arial !important;
+}
+.cover-main img {
+  width: 100px;
+  filter: drop-shadow(5px 5px 0 white)
+        drop-shadow(-2px 2px 0 white)
+        drop-shadow(2px -2px 0 white)
+        drop-shadow(-2px -2px 0 white);
+}
+h1 {
+  font-size: 50px !important;
+}
+h2 {
+  font-size: 30px !important;
+}
+h3 {
+  font-size: 20px !important;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Work Sans', sans-serif;
+}
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+  font-weight: 300 !important;
+  letter-spacing: -1px;
+}
+.anchor span {
+  color: rgba(0,0,0,0.8);
+}
+body {
+  color: rgba(0,0,0,0.8);
+}
+.markdown-section p, .markdown-section ul, .markdown-section ol {
+  line-height: 1.5rem !important;
+}

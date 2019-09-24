@@ -1,0 +1,18 @@
+{
+  "name": "overpool",
+  "version": "0.0.2",
+  "description": "A Turing-complete Decentralized Ledger of Off-chain Bitcoin Transactions",
+  "main": "index.js",
+  "author": "unwriter@protonmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "bpu": "0.0.7",
+    "bsv": "^0.30.0",
+    "chokidar": "^3.1.1",
+    "dat-node": "^3.5.15",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "datapay": "0.0.18"
+  }
+}
