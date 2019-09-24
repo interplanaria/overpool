@@ -6,6 +6,7 @@ var counter = 0;
 (async () => {
   await pool.create({ path: "loop" })
   pool.on("tx", (e) => {
+    console.log("tx")
     let pushdata = e.parsed.out[0].tape[1].cell.map((c) => {
       return c.s
     })

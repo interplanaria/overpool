@@ -48,6 +48,8 @@ Now that we have the key, we can discover the pool over DHT (Distributed Hash Ta
 
 From the same machine, try running the following. It will start a subscriber pool.
 
+> ** REMEMBER TO USE YOUR OWN GENERATED KEY FROM ABOVE**
+
 ```
 node sub c01929a4b632e6540b62b37977ed2de90189bd70c65d6af9ec8f40b5eb4835da
 ```
@@ -77,6 +79,8 @@ Go to another machine and run the same sub code:
 ```
 node sub c01929a4b632e6540b62b37977ed2de90189bd70c65d6af9ec8f40b5eb4835da
 ```
+
+> ** REMEMBER TO USE YOUR OWN GENERATED KEY FROM ABOVE**
 
 You will see that it works exactly the same as the local subscriber pool. Assuming that you have all 3 pools running at this point (The publisher `localhost` pool, the local subscriber pool, and the remote subscriber pool), here's what is exactly going on:
 

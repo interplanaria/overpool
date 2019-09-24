@@ -1,8 +1,11 @@
-const chokidar = require('chokidar')
+const chokidar = require('chokidar');
+const EventEmitter = require('events');
+const fs = require('fs');
+const os = require('os');
+
 const watcher = Symbol('watcher');
 const fd = Symbol('fd');
-const EventEmitter = require('events');
-const os = require('os');
+
 function closeFile() {
   if (this[td]) {
     fs.close(this[fd], (err) => {
@@ -93,3 +96,4 @@ class Tail extends EventEmitter {
     this.emit('close');
   }
 }
+module.exports = Tail
