@@ -654,9 +654,35 @@ pool.on("tx", (e) => {
 })
 ```
 
-## More Examples
+## 5. More Examples
 
 Try more tutorials in the repository:
+
+### 5.1. Basic Pool
+
+a simple single-player pool
+
+https://github.com/interplanaria/overpool/tree/master/demo/basic
+
+### 5.2. Filtered Pool
+
+A pool with a request filter
+
+https://github.com/interplanaria/overpool/tree/master/demo/filter
+
+### 5.3. Looping with Bitcoin
+
+Implementing a primitive looping with Bitcoin transactions
+
+https://github.com/interplanaria/overpool/tree/master/demo/loop
+
+### 5.4. P2P Pubsub
+
+A demo for Overpool pubsub over DAT P2P Network
+
+https://github.com/interplanaria/overpool/tree/master/demo/pubsub
+
+
 
 
 ---
