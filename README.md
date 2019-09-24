@@ -242,30 +242,33 @@ For example, to only accept signed transactions, you may write the following cod
 ```
 const Overpool = require('overpool')
 const pool = new Overpool()
-pool.create({path: "localhost"}, (e, callback) => {
-  /******************************************
-  *
-  *  The "parsed" attribute contains a BPU parsed transaction object.
-  *
-  *  e := {
-  *    merchantData: null,
-  *    transaction: '0100000000010000000000000000296a2231394878696756345179427633744870515663554551797131707a5a56646f417574046173666400000000',
-  *    refundTo: null,
-  *    memo: null,
-  *    parsed: {
-  *      tx: {
-  *        h: 'da19359e5e91ce7962cf42a885e0dc4c5c7a3a66823637caf15002d422d8f77d'
-  *      },
-  *      in: [],
-  *      out: [ [Object] ]
-  *    }
-  *  }
-  *
-  ********************************************/
-  if (e.parsed.in.length > 0) {
-    callback(null, true);
-  } else {
-    callback("must have inputs")
+pool.create({
+  path: "localhost",
+  filter: (e, callback) => {
+    /******************************************
+    *
+    *  The "parsed" attribute contains a BPU parsed transaction object.
+    *
+    *  e := {
+    *    merchantData: null,
+    *    transaction: '0100000000010000000000000000296a2231394878696756345179427633744870515663554551797131707a5a56646f417574046173666400000000',
+    *    refundTo: null,
+    *    memo: null,
+    *    parsed: {
+    *      tx: {
+    *        h: 'da19359e5e91ce7962cf42a885e0dc4c5c7a3a66823637caf15002d422d8f77d'
+    *      },
+    *      in: [],
+    *      out: [ [Object] ]
+    *    }
+    *  }
+    *
+    ********************************************/
+    if (e.parsed.in.length > 0) {
+      callback(null, true);
+    } else {
+      callback("must have inputs")
+    }
   }
 })
 ```
@@ -561,12 +564,13 @@ Here's an example where we check if the payment contains an input, therefore rej
 const Overpool = require('overpool')
 const pool = new Overpool()
 pool.create({
-  path: "localhost"
-}, (p, callback) => {
-  if (p.parsed.in.length > 0) {
-    callback(null, true);
-  } else {
-    callback("must have inputs")
+  path: "localhost",
+  filter: (p, callback) => {
+    if (p.parsed.in.length > 0) {
+      callback(null, true);
+    } else {
+      callback("must have inputs")
+    }
   }
 })
 ```
