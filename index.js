@@ -190,6 +190,9 @@ class Overpool {
         if (!this.tails[p.path]) {
           let tail;
           try {
+            if (!fs.existsSync(p.path + "/tape.txt")) {
+              fs.closeSync(fs.openSync(p.path + "/tape.txt", 'w'));
+            }
             tail = new Tail(p.path + "/tape.txt")
           } catch (e) {
             fs.closeSync(fs.openSync(p.path + "/tape.txt", 'w'));
