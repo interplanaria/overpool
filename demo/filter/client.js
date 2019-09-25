@@ -17,7 +17,7 @@ const build = () => {
 };
 (async () => {
   let Payment = await build();
-  let result = await axios.post('http://localhost:3000/filtered_pool', Payment)
+  let result = await axios.post('http://localhost:3001/filtered_pool', Payment)
   .catch(function (error) {
     console.log(error);
   });

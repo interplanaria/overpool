@@ -4,6 +4,8 @@ const path = require('path')
 const bsv = require('bsv')
 const bpu = require('bpu');
 const Dat = require('dat-node')
+const readline = require('readline')
+const Stream = require('stream')
 const Tail = require('./tail')
 
 class Overpool {
@@ -82,8 +84,15 @@ class Overpool {
       this.app = express()
       this.app.use(express.json())
       this.app.use(express.urlencoded({ extended: true }))
-      this.app.post("/" + poolPath, async (req, res) => {
-        this.processRequest(req, res, poolPath)
+      this.app.post("/" + poolPath, (req, res) => {
+        let payment = req.body;
+        this.post({ payment: payment, path: poolPath })
+        .then((response) => {
+          res.json(response)
+        })
+        .catch((error) => {
+          res.json(error)
+        })
       })
       this.subscribed.push({
         key: poolPath,
@@ -95,71 +104,101 @@ class Overpool {
       })
     })
   }
-  async processRequest (req, res, type) {
-    /****************************************************
+  post (o) {
+    let payment = o.payment;
+    let type = o.path;
+    return new Promise((resolve, reject) => {
+      /****************************************************
 
-      BIP270 Format
+        BIP270 Format
 
-      Payment {
-        merchantData // string. optional.
-        transaction // a hex-formatted (and fully-signed and valid) transaction. required.
-        refundTo // string. paymail to send a refund to. optional.
-        memo // string. optional.
-      }
-
-      PaymentACK {
-        payment // Payment. required.
-        memo // string. optional.
-        error // number. optional.
-      }
-
-    ****************************************************/
-    let payment = req.body;
-    try {
-      let parsed = await bpu.parse({
-        tx: { r: payment.transaction },
-        transform: (o, c) => {
-          if (c.buf && c.buf.byteLength > 512) {
-            o.ls = o.s
-            o.lb = o.b
-            delete o.s
-            delete o.b
-          }
-          return o
-        },
-        split: [
-          { token: { s: "|" }, },
-          { token: { op: 106 }, include: "l" }
-        ]
-      })
-      if (parsed) {
-        let hash = parsed.tx.h;
-        if (this.filters[type]) {
-          let payload = payment
-          payload.parsed = parsed
-          this.filters[type](payload, (err, valid) => {
-            if (err) {
-              res.json({ payment: payment, error: "Unsupported transaction type" })
-            } else {
-              try {
-                this.post({ hash: hash, payment: payment, path: type }).then((response) => {
-                  res.json({ payment: payment, memo: response })
-                })
-              } catch (e) {
-                res.json({ payment: payment, error: e })
-              }
-            }
-          })
-        } else {
-          this.post({ hash: hash, payment: payment, path: type }).then((response) => {
-            res.json({ payment: payment, memo: response })
-          })
+        Payment {
+          merchantData // string. optional.
+          transaction // a hex-formatted (and fully-signed and valid) transaction. required.
+          refundTo // string. paymail to send a refund to. optional.
+          memo // string. optional.
         }
+
+        PaymentACK {
+          payment // Payment. required.
+          memo // string. optional.
+          error // number. optional.
+        }
+
+      ****************************************************/
+      if (!payment.transaction) {
+        reject({ payment: payment, error: "Must include hex-formatted transaction" })
       } else {
-        res.json({ payment: payment, error: "Invalid Transaction" })
+        bpu.parse({
+          tx: { r: payment.transaction },
+          transform: (o, c) => {
+            if (c.buf && c.buf.byteLength > 512) {
+              o.ls = o.s
+              o.lb = o.b
+              delete o.s
+              delete o.b
+            }
+            return o
+          },
+          split: [
+            { token: { s: "|" }, },
+            { token: { op: 106 }, include: "l" }
+          ]
+        })
+        .then((parsed) => {
+          if (parsed) {
+            let hash = parsed.tx.h;
+            if (this.filters[type]) {
+              let payload = payment
+              payload.parsed = parsed
+              this.filters[type](payload, (err, valid) => {
+                if (err) {
+                  reject({ payment: payment, error: "Unsupported transaction type" })
+                } else {
+                  try {
+                    this._post({ hash: hash, payment: payment, path: type }).then((response) => {
+                      resolve({ payment: payment, memo: response })
+                    })
+                  } catch (e) {
+                    reject({ payment: payment, error: e })
+                  }
+                }
+              })
+            } else {
+              this._post({ hash: hash, payment: payment, path: type }).then((response) => {
+                resolve({ payment: payment, memo: response })
+              })
+            }
+          } else {
+            reject({ payment: payment, error: "Invalid Transaction" })
+          }
+        })
+        .catch((e) => {
+          reject({ payment: payment, error: e })
+        })
       }
-    } catch (e) {
-      res.json({ payment: payment, error: e })
+    })
+  }
+  async _post (o) {
+    /**************************************
+    *
+    *  o := {
+    *    hash: <transaction hash>,
+    *    payment: <payment object>,
+    *    path: <overpool path>
+    *  }
+    *
+    **************************************/
+    // generate hash
+    if (o.hash && o.payment && o.path) {
+      let poolPath = path.resolve(this.path, o.path)
+      let filePath = path.resolve(poolPath, o.hash)
+      await fs.promises.writeFile(filePath, JSON.stringify(o.payment))
+      let tapePath = path.resolve(poolPath, "tape.txt")
+      let line = "OVERPOOL " + o.hash + " " + Date.now() + "\n"
+      await fs.promises.appendFile(tapePath, line);
+    } else {
+      throw new Error("The post object must contain three attributes: hash, payment, and path") 
     }
   }
   prune(id) {
@@ -238,6 +277,7 @@ class Overpool {
           ]
         })
         handler({
+          path: p.key,
           key: p.key,
           hash: hash,
           payment: JSON.parse(content),
@@ -249,6 +289,44 @@ class Overpool {
         this.read(p, hash, handler)      
       }, 1000)
     }
+  }
+  readPromise(o, txid) {
+    return new Promise((resolve, reject) => {
+      this.read ({ key: o.key, path: o.path }, txid, (result) => {
+        resolve(result)
+      })
+    })
+  }
+  tail (o) {
+    return new Promise((resolve, reject) => {
+      if (o && o.path && o.size) {
+        let poolPath = path.resolve(this.path, o.path)
+        let filePath = path.resolve(poolPath, "tape.txt")
+        let readStream = fs.createReadStream(filePath);
+        let rl = readline.createInterface(readStream, new Stream);
+        let cache = []
+        rl.on('close', () => {
+          // use currentLine here
+          let promises = cache.map((c) => {
+            return new Promise((_resolve, _reject) => {
+              let chunks = c.split(" ");
+              let txid = chunks[1];
+              let res = this.readPromise({ key: o.path, path: poolPath }, txid)
+              _resolve(res)
+            })
+          })
+          Promise.all(promises).then(resolve)
+        });
+        rl.on('line', (line) => {
+          cache.push(line);
+          if (cache.length > o.size) {
+            cache.shift();
+          }
+        });
+      } else {
+        throw new Error("The head query must contain 'path' and 'size' attributes")
+      }
+    })
   }
   async get (o) {
     /**************************************
@@ -262,38 +340,12 @@ class Overpool {
     if (o && o.hash && o.path) {
       let poolPath = path.resolve(this.path, o.path)
       let filePath = path.resolve(poolPath, o.hash)
-      let res = await fs.promises.readFile(filePath).catch((e) => {
+      let res = await fs.promises.readFile(filePath, "utf8").catch((e) => {
         throw new Error("The file doesn't exist")
       })
       return res;
     } else {
       throw new Error("The get query must contain 'hash' and 'path' attributes")
-    }
-  }
-  async post (o) {
-    /**************************************
-    *
-    *  o := {
-    *    payment: <payment object>,
-    *    path: <overpool path>
-    *  }
-    *
-    **************************************/
-    // generate hash
-    let hash = new bsv.Transaction(o.payment.transaction).hash
-    o.hash = hash;
-    await this._post(o)
-  }
-  async _post (o) {
-    if (o.hash && o.payment && o.path) {
-      let poolPath = path.resolve(this.path, o.path)
-      let filePath = path.resolve(poolPath, o.hash)
-      await fs.promises.writeFile(filePath, JSON.stringify(o.payment))
-      let tapePath = path.resolve(poolPath, "tape.txt")
-      let line = "OVERPOOL " + o.hash + " " + Date.now() + "\n"
-      await fs.promises.appendFile(tapePath, line);
-    } else {
-      throw new Error("The post object must contain three attributes: hash, payment, and path") 
     }
   }
 }

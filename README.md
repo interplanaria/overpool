@@ -880,3 +880,16 @@ Pruning involves renaming `tape.txt` to `tape-<timestamp>.txt` and creating a ne
 ```
 await pool.prune("mypool")
 ```
+
+
+## 8. tail
+
+Get the `N` last entries on the ledger:
+
+```
+// Get the last 2 items from the "fibonacci" ledger
+let tail = await pool.tail({
+  path: "fibonacci",
+  size: 2
+})
+```

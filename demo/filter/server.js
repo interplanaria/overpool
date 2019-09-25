@@ -2,6 +2,7 @@ const Overpool = require("../../index")
 const pool = new Overpool();
 pool.create({
   path: "filtered_pool", 
+  port: 3001,
   filter: (e, cb) => {
     /******************************************
     *
