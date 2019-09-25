@@ -875,7 +875,7 @@ You can implement a looping program if you use this API along with the `on()` ev
 Get a transaction by overpool `path` and `hash`.
 
 ```
-let payment = await pool.tail({
+let payment = await pool.get({
   path: "localhost",
   hash: "91dfeea1977d6933b0c67b8af03b1ee8aa5d6716d05ae4e7ebd8bf0eeaaf1d3f"
 })
