@@ -870,17 +870,16 @@ await pool.post({
 You can implement a looping program if you use this API along with the `on()` event handler. For example, you can listen to `on("tx")` event and create a new entry on the overpool ledger. This will trigger another event, and you may also write a logic to automatically trigger another transaction, etc. until it meets certain condition and halts (and you can broadcast transactions at any point in time during the entire looping process).
 
 
+## 7. get
 
-## 7. prune
-
-prune the `tape.txt` file.
-
-Pruning involves renaming `tape.txt` to `tape-<timestamp>.txt` and creating a new `tape.txt` file to start the logging all over again.
+Get a transaction by overpool `path` and `hash`.
 
 ```
-await pool.prune("mypool")
+let payment = await pool.tail({
+  path: "localhost",
+  hash: "91dfeea1977d6933b0c67b8af03b1ee8aa5d6716d05ae4e7ebd8bf0eeaaf1d3f"
+})
 ```
-
 
 ## 8. tail
 
@@ -893,3 +892,15 @@ let tail = await pool.tail({
   size: 2
 })
 ```
+
+
+## 9. prune
+
+prune the `tape.txt` file.
+
+Pruning involves renaming `tape.txt` to `tape-<timestamp>.txt` and creating a new `tape.txt` file to start the logging all over again.
+
+```
+await pool.prune("mypool")
+```
+

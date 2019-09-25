@@ -328,25 +328,30 @@ class Overpool {
       }
     })
   }
-  async get (o) {
-    /**************************************
-    *
-    *  o := {
-    *    path: <overpool path>,
-    *    hash: <transaction id>
-    *  }
-    *
-    **************************************/
-    if (o && o.hash && o.path) {
-      let poolPath = path.resolve(this.path, o.path)
-      let filePath = path.resolve(poolPath, o.hash)
-      let res = await fs.promises.readFile(filePath, "utf8").catch((e) => {
-        throw new Error("The file doesn't exist")
-      })
-      return res;
-    } else {
-      throw new Error("The get query must contain 'hash' and 'path' attributes")
-    }
+  get (o) {
+    return new Promise((resolve, reject) => {
+      /**************************************
+      *
+      *  o := {
+      *    path: <overpool path>,
+      *    hash: <transaction id>
+      *  }
+      *
+      **************************************/
+      if (o && o.hash && o.path) {
+        let poolPath = path.resolve(this.path, o.path)
+        let filePath = path.resolve(poolPath, o.hash)
+        try {
+          this.read ({ key: o.path, path: poolPath }, o.hash, (result) => {
+            resolve(result)
+          })
+        } catch (e) {
+          reject("The file doesn't exist")
+        }
+      } else {
+        throw new Error("The get query must contain 'hash' and 'path' attributes")
+      }
+    })
   }
 }
 module.exports = Overpool
