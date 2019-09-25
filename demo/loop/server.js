@@ -5,6 +5,8 @@ const pool = new Overpool();
 var counter = 0;
 (async () => {
   await pool.create({ path: "loop" })
+  let key = await pool.pub({ path: "loop" })
+  console.log("key = ", key)
   pool.on("tx", (e) => {
     console.log("tx")
     let pushdata = e.parsed.out[0].tape[1].cell.map((c) => {

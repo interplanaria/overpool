@@ -250,6 +250,26 @@ class Overpool {
       }, 1000)
     }
   }
+  async get (o) {
+    /**************************************
+    *
+    *  o := {
+    *    path: <overpool path>,
+    *    hash: <transaction id>
+    *  }
+    *
+    **************************************/
+    if (o && o.hash && o.path) {
+      let poolPath = path.resolve(this.path, o.path)
+      let filePath = path.resolve(poolPath, o.hash)
+      let res = await fs.promises.readFile(filePath).catch((e) => {
+        throw new Error("The file doesn't exist")
+      })
+      return res;
+    } else {
+      throw new Error("The get query must contain 'hash' and 'path' attributes")
+    }
+  }
   async post (o) {
     /**************************************
     *
