@@ -57,6 +57,8 @@ const buildTx = (fib) => {
       }
     }
   })
+  let key = await pool.pub({ path: "localhost" })
+  console.log("publishing at", key)
   setTimeout(async () => {
     let transaction = await buildTx(1)
     postTx(pool, transaction).catch((e) => {
