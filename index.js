@@ -15,6 +15,7 @@ class Overpool {
     this.filters = {}
     this.dats = {};
     this.tails = {};
+    this.tailOptions = Object.assign({ usePolling: true }, (o && o.tail ? o.tail : {}));
   }
   join(store, key) {
     return new Promise((resolve, reject) => {
@@ -35,6 +36,9 @@ class Overpool {
           resolve(dat.key.toString('hex'))
         })
       } else {
+        if (!fs.existsSync(store)) {
+          fs.mkdirSync(store, { recursive: true })
+        }
         Dat(store, (err, dat) => {
           if (err) throw err
           console.log("import")
@@ -52,16 +56,21 @@ class Overpool {
       }
     })
   }
-  async pub(o) {
+  async pub (o) {
     if (o && o.path) {
-      let discoveryKey = await this.join(this.path + "/" + o.path)
+      let discoveryKey;
+      if (o.topic) {
+        discoveryKey = await this.join(this.path + "/" + o.path + "/" + o.topic)
+      } else {
+        discoveryKey = await this.join(this.path + "/" + o.path)
+      }
       this.publicKey = discoveryKey
       return discoveryKey;
     } else {
       throw new Error("Must specify path")
     }
   }
-  async sub(o) {
+  async sub (o) {
     if (o && o.path) {
       let discoveryKey = await this.join(this.path + "/" + o.path, { key: o.path })
       this.subscribed.push({
@@ -78,6 +87,7 @@ class Overpool {
       let port = (o && o.port ? o.port : 3000);
       let poolPath = (o && o.path ? o.path : "localhost")
       if (o && o.filter) this.filters[poolPath] = o.filter;
+      console.log(this.path, poolPath)
       if (!fs.existsSync(this.path + "/" + poolPath)) {
         fs.mkdirSync(this.path + "/" + poolPath, { recursive: true })
       }
@@ -153,11 +163,11 @@ class Overpool {
               payload.parsed = parsed
               this.filters[type](payload, (err, valid) => {
                 if (err) {
-                  reject({ payment: payment, error: "Unsupported transaction type" })
+                  reject({ payment: payment, memo: "Unsupported transaction type", error: 1 })
                 } else {
                   try {
-                    this._post({ hash: hash, payment: payment, path: type }).then((response) => {
-                      resolve({ payment: payment, memo: response })
+                    this._post({ hash: hash, payment: payment, path: type, topic: o.topic }).then((response) => {
+                      resolve({ payment: payment, memo: response.memo, error: response.error })
                     })
                   } catch (e) {
                     reject({ payment: payment, error: e })
@@ -165,16 +175,16 @@ class Overpool {
                 }
               })
             } else {
-              this._post({ hash: hash, payment: payment, path: type }).then((response) => {
-                resolve({ payment: payment, memo: response })
+              this._post({ hash: hash, payment: payment, path: type, topic: o.topic }).then((response) => {
+                resolve({ payment: payment, memo: response.memo, error: response.error })
               })
             }
           } else {
-            reject({ payment: payment, error: "Invalid Transaction" })
+            reject({ payment: payment, memo: "Invalid Transaction", error: 1 })
           }
         })
         .catch((e) => {
-          reject({ payment: payment, error: e })
+          reject({ payment: payment, memo: e, error: 1 })
         })
       }
     })
@@ -192,13 +202,32 @@ class Overpool {
     // generate hash
     if (o.hash && o.payment && o.path) {
       let poolPath = path.resolve(this.path, o.path)
-      let filePath = path.resolve(poolPath, o.hash)
-      await fs.promises.writeFile(filePath, JSON.stringify(o.payment))
-      let tapePath = path.resolve(poolPath, "tape.txt")
-      let line = "OVERPOOL " + o.hash + " " + Date.now() + "\n"
-      await fs.promises.appendFile(tapePath, line);
+      let globalTapePath = path.resolve(poolPath, "tape.txt")
+      let d = Date.now()
+      if (o.topic) {
+        // global tape
+        let line = "OVERPOOL " + o.topic + "/" + o.hash + " " + d + "\n"
+        await fs.promises.appendFile(globalTapePath, line);
+        // topic tape
+        let topicPath = path.resolve(poolPath, o.topic)
+        if (!fs.existsSync(topicPath)) {
+          fs.mkdirSync(topicPath, { recursive: true })
+        }
+        line = "OVERPOOL " + o.hash + " " + d + "\n"
+        let localTapePath = path.resolve(topicPath, "tape.txt");
+        await fs.promises.appendFile(localTapePath, line);
+        // write tx to file
+        let filePath = path.resolve(topicPath, o.hash)
+        await fs.promises.writeFile(filePath, JSON.stringify(o.payment))
+      } else {
+        let filePath = path.resolve(poolPath, o.hash)
+        await fs.promises.writeFile(filePath, JSON.stringify(o.payment))
+        let line = "OVERPOOL " + o.hash + " " + d + "\n"
+        await fs.promises.appendFile(globalTapePath, line);
+      }
+      return { memo: "success", error: 0 }
     } else {
-      throw new Error("The post object must contain three attributes: hash, payment, and path") 
+      return { memo: "The post object must contain three attributes: hash, payment, and path", error: 1 }
     }
   }
   prune(id) {
@@ -223,42 +252,69 @@ class Overpool {
       }
     })
   }
-  on (e, handler) {
-    if (e === 'tx') {
-      this.subscribed.forEach((p) => {
-        if (!this.tails[p.path]) {
-          let tail;
-          try {
-            if (!fs.existsSync(p.path + "/tape.txt")) {
-              fs.closeSync(fs.openSync(p.path + "/tape.txt", 'w'));
-            }
-            tail = new Tail(p.path + "/tape.txt")
-          } catch (e) {
-            fs.closeSync(fs.openSync(p.path + "/tape.txt", 'w'));
-            tail = new Tail(p.path + "/tape.txt")
-          }
-          this.tails[p.path] = tail
-          tail.on("line", async (data) => {
-            let chunks = data.split(" ")
-            let type = chunks[0];
-            let hash = chunks[1];
-            this.read(p, hash, handler)
-          });
-          tail.on("close", () => {
-            console.log("watch closed");
-          })
-          tail.on("error", (error) => {
-            console.log("OVERPOOL", 'Tail error', error);
-          });
-          tail.watch();
+  monitor (p, handler) {
+    if (!this.tails[p.path]) {
+      let tail;
+      let _path = p.path;
+      if (p.topic) {
+        _path += ("/" + p.topic)
+      }
+      if (!fs.existsSync(_path)) {
+        fs.mkdirSync(_path, { recursive: true })
+      }
+      try {
+        if (!fs.existsSync(_path + "/tape.txt")) {
+          fs.closeSync(fs.openSync(_path + "/tape.txt", 'w'));
         }
+        tail = new Tail(_path + "/tape.txt", this.tailOptions)
+      } catch (e) {
+        fs.closeSync(fs.openSync(_path + "/tape.txt", 'w'));
+        tail = new Tail(_path + "/tape.txt", this.tailOptions)
+      }
+      this.tails[_path] = tail
+      tail.on("line", (data) => {
+        let chunks = data.split(" ")
+        let type = chunks[0];
+        let hash = chunks[1];
+        this.read(p, hash, handler)
+      });
+      tail.on("close", () => {
+        console.log("watch closed");
       })
+      tail.on("error", (error) => {
+        console.log("OVERPOOL", 'Tail error', error);
+      });
+      tail.watch()
+    }
+  }
+  on (e, handler) {
+    //if (e === 'tx') {
+    if (e.startsWith('tx')) {
+      if (e === 'tx') {
+        this.subscribed.forEach((p) => {
+          this.monitor(p, handler)
+        })
+      } else {
+        let tokens = e.split(":")
+        if (tokens.length > 2) {
+          let path = this.path + "/" + tokens[1];
+          let topic = tokens[2];
+          this.monitor({ key: path, path: path, topic: topic }, handler)
+        } else if (tokens.length > 1) {
+          let path = this.path + "/" + tokens[1];
+          this.monitor({ key: path, path: path }, handler)
+        }
+      }
     }
     return this;
   }
   read (p, hash, handler) {
-    if (fs.existsSync(p.path + "/" + hash)) {
-      fs.readFile(p.path + "/" + hash, "utf8", async (err, content) => {
+    let _path = p.path;
+    if (p.topic) {
+      _path += ("/" + p.topic)
+    }
+    if (fs.existsSync(_path + "/" + hash)) {
+      fs.readFile(_path + "/" + hash, "utf8", async (err, content) => {
         let payment = JSON.parse(content);
         let parsed = await bpu.parse({
           tx: { r: payment.transaction },
@@ -276,13 +332,15 @@ class Overpool {
             { token: { op: 106 }, include: "l" }
           ]
         })
-        handler({
+        let ev = {
           path: p.key,
           key: p.key,
           hash: hash,
           payment: JSON.parse(content),
           parsed: parsed
-        })
+        }
+        if (p.topic) ev.topic = p.topic;
+        handler(ev)
       })
     } else {
       setTimeout(() => {

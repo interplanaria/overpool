@@ -855,7 +855,9 @@ You can directly post to your own ledger without going through HTTP.
 
 > NOTE 2: In order to implement asynchronous multiplayer pool dynamic, you may want to create your own pool and let the other party subscribe to your own pool. Alice writes to Alice pool, Bob subscribes to Alice pool, but only writes to Bob pool. Alice and Bob communicates by each writing to their own pool and subscribing to each other's pool. 
 
-The syntax is:
+### Basic
+
+The basic syntax is:
 
 ```
 const Overpool = require('overpool');
@@ -868,6 +870,125 @@ await pool.post({
 ```
 
 You can implement a looping program if you use this API along with the `on()` event handler. For example, you can listen to `on("tx")` event and create a new entry on the overpool ledger. This will trigger another event, and you may also write a logic to automatically trigger another transaction, etc. until it meets certain condition and halts (and you can broadcast transactions at any point in time during the entire looping process).
+
+### Advanced (Topic)
+
+By default you can have only one `tape.txt` per pool. But you can also create multiple topics for each pool.
+
+```
+const Overpool = require('overpool');
+const pool = new Overpool();
+await pool.create({ path: "loop" })
+await pool.post({
+  path: "loop",
+  payment: <Payment object>,
+  topic: <Topic (optional. stored as a subfolder under the path)>
+})
+```
+
+Here's an example:
+
+```
+const Overpool = require('overpool');
+const pool = new Overpool();
+await pool.create({ path: "loop" })
+for(let i=0; i<10; i++) {
+  for(let j=0; j<3; j++) {
+    await pool.post({
+      path: "loop",
+      payment: <Payment object>,
+      topic: "p" + i
+    })
+  }
+}
+```
+
+Above command would create the following folder structure:
+
+```
+overpool/localhost/
+├── p0
+│   ├── 580827ee45a6380aca17c5f8953eb13e474bc275944d650df2a6c6b1e3b34df6
+│   ├── 71a1dc22ba4e9a598ed2d731d7721a64696f7a99c7993ba745871b42ba99a884
+│   ├── 83c393ad76e62b557c5454be2fae93923dca1af04c944558c486d5a80d628f79
+│   └── tape.txt
+├── p1
+│   ├── 14d9ac824bbb0a9324b281a21a05d856099da104dabb1c26333f2324208611f5
+│   ├── 5c8ea3233a8f197204dcada84ddba101dea417c2e290fd9e855c33348df0b87b
+│   ├── c928614131cece72727b43c1ca3391c109b9ce917522cb2e64f9fc089fa0d529
+│   └── tape.txt
+├── p2
+│   ├── 5dfe459838aeff9bcded79578e0444323131ceb0f13f54dad07520ba5e76b312
+│   ├── 68e96f61b3e7b03847f164dc7456a7c57e7d01ba99cb709c716a07b44777795a
+│   ├── 7bd1443953e098748fea298cad4e5e3b88c3d876c82c58ba4306cc0c7a923b0a
+│   └── tape.txt
+├── p3
+│   ├── 084d0a25b6c2f807bf128f245e6516ed72a0ec671c06cdc547c6a8d711887c46
+│   ├── 381793958e0674e0c8567b565db8c9cd1a6affb948e95423d0996d6153195767
+│   ├── 833b1a44500c65e5a5b111906bf8cf50e4b777629a8b44f257a6e161845ec130
+│   └── tape.txt
+├── p4
+│   ├── 742e3f6eb5684939a7a1d4c3dc57daa5d9b7ad6f1a0014d702f6c6b5f7817275
+│   ├── b88eb930f0e58779a3657c4ed0d21ac9342a8badcee3ad4d075757a94eab3af9
+│   ├── ecc87674b40dbef4611d0efbaee6a05effe56b4bd6163fafb4661ac4be79a54f
+│   └── tape.txt
+├── p5
+│   ├── 3c9dc823909ecbf3e46cde0d7bfe4a4c7a9875e00c0639b069bf20f8caf972fb
+│   ├── a895888f6db187037be1f3d4e30712d5c4710bfe16f6ad9fe0f39523a74be5db
+│   ├── f662d8c4c4d32c5b52c4aee62d61c94c1118069255c5adb490c8c855e02d41e4
+│   └── tape.txt
+├── p6
+│   ├── 13e55e1fd0c7bd49b4e98a48e69b04840ecc9054694ab60f1feb90feb853d63c
+│   ├── 20703497be122f959cd9448234b05b2d00d2358d86ec152bf9a937cac6f13bdd
+│   ├── 77f54a7bd9c02037d84e13cfaf1d7532f6cce6a244ffe12d65b492fc06505176
+│   └── tape.txt
+├── p7
+│   ├── 50cc0052a15c08fa82489317d5e9bf283dd73017c97ce57df53c91ea5a19c6dc
+│   ├── 8d49d687b50f44892cabea2a0695e1219cfdefc46f94cc38622b912354d1886e
+│   ├── f69a82ed3672ced3eda720a06fb181e2d9e9e113100628da0e447fc84dc99771
+│   └── tape.txt
+├── p8
+│   ├── 7f0b4efb3aeb2e33b82bb4969ea9504d6681758c261065cee13d6f7e2d329c55
+│   ├── a2efec8d43996d198fc2c02417a9b0b06094e0b15b34a092cb4270ba9cb02702
+│   ├── cc0e17096c98942a1c890ddaf8e1c9302c65fb5021506947c4f9183d335b7232
+│   └── tape.txt
+├── p9
+│   ├── 88c0a0a66fe1703ab39c128c11f613073f56de5dc3d80ec6c88106e06a0e1a1b
+│   ├── a7ca7b80272866c932233c004e16721fdffa9112522bf8664a7397a7aa3786ac
+│   ├── bd608b49bd2e81b704d39ef07765fe4f6a696df34429e8360352074d88c1a4e2
+│   └── tape.txt
+└── tape.txt
+```
+
+Note that:
+
+1. There's a global `tape.txt` file which keeps track of all transactions.
+2. Each topic is represented by a subfolder (`p0`, `p1`, ...)
+3. The Payment objects are stored under each topic folder (not the pool's root folder).
+4. Each topic folder contains its own `tape.txt` which only keeps track of its own events.
+
+The global `tape.txt` would look something like this:
+
+```
+OVERPOOL p0/83c393ad76e62b557c5454be2fae93923dca1af04c944558c486d5a80d628f79 1571150067022
+OVERPOOL p0/71a1dc22ba4e9a598ed2d731d7721a64696f7a99c7993ba745871b42ba99a884 1571150067029
+OVERPOOL p0/580827ee45a6380aca17c5f8953eb13e474bc275944d650df2a6c6b1e3b34df6 1571150067030
+OVERPOOL p1/c928614131cece72727b43c1ca3391c109b9ce917522cb2e64f9fc089fa0d529 1571150067031
+OVERPOOL p1/14d9ac824bbb0a9324b281a21a05d856099da104dabb1c26333f2324208611f5 1571150067032
+OVERPOOL p1/5c8ea3233a8f197204dcada84ddba101dea417c2e290fd9e855c33348df0b87b 1571150067033
+...
+OVERPOOL p9/bd608b49bd2e81b704d39ef07765fe4f6a696df34429e8360352074d88c1a4e2 1571150067050
+OVERPOOL p9/a7ca7b80272866c932233c004e16721fdffa9112522bf8664a7397a7aa3786ac 1571150067051
+OVERPOOL p9/88c0a0a66fe1703ab39c128c11f613073f56de5dc3d80ec6c88106e06a0e1a1b 1571150067051
+```
+
+And a local `tape.txt` would look something like this:
+
+```
+OVERPOOL 83c393ad76e62b557c5454be2fae93923dca1af04c944558c486d5a80d628f79 1571150067022
+OVERPOOL 71a1dc22ba4e9a598ed2d731d7721a64696f7a99c7993ba745871b42ba99a884 1571150067029
+OVERPOOL 580827ee45a6380aca17c5f8953eb13e474bc275944d650df2a6c6b1e3b34df6 1571150067030
+```
 
 
 ## 7. get
