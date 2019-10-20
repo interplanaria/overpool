@@ -1,7 +1,8 @@
 const Overpool = require('../../index')
 const pool = new Overpool();
 (async () => {
-  pool.create({ path: "localhost", port: 3001 })
+  await pool.initServer({ port: 3001 })
+  pool.create({ path: "localhost" })
   let key = await pool.pub({
     path: "localhost"
   });

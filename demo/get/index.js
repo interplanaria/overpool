@@ -16,7 +16,8 @@ const buildTx = (i) => {
   })
 }
 (async () => {
-  await pool.create({ path: "localhost", port: 3001 })
+  await pool.initServer({ port: 3001 });
+  pool.create({ path: "localhost" })
   pool.on("tx", async (e) => {
     // compare the new event with the get query
     let queried = await pool.get({

@@ -73,35 +73,39 @@ class Overpool {
       throw new Error("Must specify path")
     }
   }
-  create (o) {
+  initServer(o) {
     return new Promise((resolve, reject) => {
-      let port = (o && o.port ? o.port : 3000);
-      let poolPath = (o && o.path ? o.path : "localhost")
-      if (o && o.filter) this.filters[poolPath] = o.filter;
-      if (!fs.existsSync(this.path + "/" + poolPath)) {
-        fs.mkdirSync(this.path + "/" + poolPath, { recursive: true })
-      }
+      let port = o && o.port ? o.port : 3000
+
       this.app = express()
       this.app.use(express.json())
       this.app.use(express.urlencoded({ extended: true }))
-      this.app.post("/" + poolPath, (req, res) => {
-        let payment = req.body;
-        this.post({ payment: payment, path: poolPath })
-        .then((response) => {
-          res.json(response)
-        })
-        .catch((error) => {
-          res.json(error)
-        })
-      })
-      this.subscribed.push({
-        key: poolPath,
-        path: this.path + "/" + poolPath
-      })
+      
       this.app.listen(port, () => {
         console.log("overpool", `listening to port:${port}!`)
         resolve();
       })
+    })
+  }
+  create (o) {
+    let poolPath = (o && o.path ? o.path : "localhost")
+    if (o && o.filter) this.filters[poolPath] = o.filter;
+    if (!fs.existsSync(this.path + "/" + poolPath)) {
+      fs.mkdirSync(this.path + "/" + poolPath, { recursive: true })
+    }
+    this.app.post("/" + poolPath, (req, res) => {
+      let payment = req.body;
+      this.post({ payment: payment, path: poolPath })
+      .then((response) => {
+        res.json(response)
+      })
+      .catch((error) => {
+        res.json(error)
+      })
+    })
+    this.subscribed.push({
+      key: poolPath,
+      path: this.path + "/" + poolPath
     })
   }
   post (o) {
