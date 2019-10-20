@@ -19,14 +19,14 @@ const build = () => {
   let Payment = await build();
 
   // p3001
-  let result = await axios.post('http://localhost:3001/p3001', Payment)
+  let result = await axios.post('http://localhost:3000/pool1', Payment)
   .catch(function (error) {
     console.log(error);
   });
   console.log("p3001", result.data)
 
   // p3002
-  result = await axios.post('http://localhost:3002/p3002', Payment)
+  result = await axios.post('http://localhost:3000/pool2', Payment)
   .catch(function (error) {
     console.log(error);
   });
