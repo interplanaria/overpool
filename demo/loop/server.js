@@ -4,7 +4,8 @@ const datapay = require('datapay');
 const pool = new Overpool();
 var counter = 0;
 (async () => {
-  await pool.create({ path: "loop" })
+  await pool.initServer()
+  pool.create({ path: "loop" })
   let key = await pool.pub({ path: "loop" })
   console.log("key = ", key)
   pool.on("tx", (e) => {

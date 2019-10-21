@@ -3,7 +3,8 @@ const fs = require('fs')
 const datapay = require('datapay')
 const pool = new Overpool();
 (async () => {
-  await pool.create({ path: "localhost", port: 3001 })
+  await pool.initServer({ port: 3001 })
+  pool.create({ path: "localhost" })
   pool.on("tx", (e) => {
     console.log(e)
     fs.readdir("overpool/localhost", (err, items) => {

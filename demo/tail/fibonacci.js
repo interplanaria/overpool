@@ -32,7 +32,8 @@ const buildTx = (fib) => {
   const pool = new Overpool();
   var fib = 0;
   var counter = 0;
-  await pool.create({ path: "localhost", port: 3001 })
+  await pool.initServer({ port: 3001 })
+  pool.create({ path: "localhost" })
   pool.on("tx", async (e) => {
     console.log("Tape = ", JSON.stringify(e.parsed.out[0].tape, null, 2))
     if(counter++ <= 100) {
