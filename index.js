@@ -10,7 +10,7 @@ const Tail = require('./tail')
 
 class Overpool {
   constructor(o) {
-    this.path = (o && o.path ? o.path + "/overpool" : process.cwd() + "/overpool")
+    this.render_path(o)
     this.subscribed = [];
     this.filters = {}
     this.dats = {};
@@ -352,6 +352,23 @@ class Overpool {
         throw new Error("The get query must contain 'hash' and 'path' attributes")
       }
     })
+  }
+  render_path(o){
+
+    let base_path = (o && o.path ? o.path+"/overpool"  : process.cwd()+"/overpool");
+    try{
+         fs.mkdirSync(base_path);
+         this.path = base_path
+     }catch(e){
+         if(e.code == "EEXIST"){
+              this.path = base_path
+              return true;
+          }else{
+            console.log(e)
+          }
+     }
+
+
   }
 }
 module.exports = Overpool
